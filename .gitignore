@@ -1,0 +1,16 @@
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+
+# Node
+mobile-app/node_modules/
+
+# Expo
+mobile-app/.expo/
+
+# VSCode
+.vscode/
