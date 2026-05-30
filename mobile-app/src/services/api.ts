@@ -1,4 +1,4 @@
-const BASE_URL = "http://10.23.161.114:8000";
+const BASE_URL = "http://10.136.161.208:8000";
 
 export async function getEmails() {
   const response = await fetch(`${BASE_URL}/inbox`);
@@ -8,6 +8,52 @@ export async function getEmails() {
 export async function processEmail(id: string) {
   const response = await fetch(
     `${BASE_URL}/emails/${id}/process`
+  );
+
+  return await response.json();
+}
+
+
+export async function saveStyle(
+  reply: string
+) {
+  const response = await fetch(
+    `${BASE_URL}/save-style`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify({
+        reply,
+      }),
+    }
+  );
+
+  return await response.json();
+}
+
+export async function replyEmail(
+  to: string,
+  subject: string,
+  body: string
+) {
+
+  const response = await fetch(
+    `${BASE_URL}/reply-email`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+      },
+      body: JSON.stringify({
+        to,
+        subject,
+        body,
+      }),
+    }
   );
 
   return await response.json();

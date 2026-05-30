@@ -1,23 +1,42 @@
-import ollama
 import json
+import ollama
 
-from app.agents.style_agent import get_style_context
+from app.services.style_memory import get_style_examples
 
 
 def generate_replies(email_body: str):
 
-    style_examples = get_style_context(email_body)
+    style_examples = get_style_examples()
 
     prompt = f"""
-You are an email assistant.
+You are an intelligent email assistant.
 
-Analyze the email and generate 3 reply versions:
+The email account owner is:
+
+Name: Lakshya Kumar Singh
+
+Generate 3 email replies:
 
 1. short_reply
 2. professional_reply
 3. detailed_reply
 
-Match the user's writing style using these examples:
+Rules:
+
+- Write as Lakshya Kumar Singh.
+- Never use placeholders such as:
+  [Your Name]
+  [Your Position]
+  [Company Name]
+  [Your Contact Information]
+- Do not invent job titles.
+- Do not include fake signatures.
+- End naturally with:
+
+Best regards,
+Lakshya
+
+Match the user's writing style using these previous replies:
 
 {style_examples}
 
@@ -25,16 +44,17 @@ Incoming Email:
 
 {email_body}
 
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON in this exact format:
 
 {{
-    "short_reply": "",
-    "professional_reply": "",
-    "detailed_reply": ""
+    "short_reply": "reply text",
+    "professional_reply": "reply text",
+    "detailed_reply": "reply text"
 }}
 """
 
     try:
+
         response = ollama.chat(
             model="qwen2.5:7b",
             format="json",
@@ -52,16 +72,43 @@ Return ONLY valid JSON in this format:
         print(content)
         print("======================================\n")
 
-        return json.loads(content)
+        parsed = json.loads(content)
+
+        print("\n========== PARSED JSON ==========")
+        print(parsed)
+        print("=================================\n")
+
+        return {
+            "short_reply": parsed.get(
+                "short_reply",
+                ""
+            ),
+
+            "professional_reply": parsed.get(
+                "professional_reply",
+                ""
+            ),
+
+            "detailed_reply": parsed.get(
+                "detailed_reply",
+                ""
+            )
+        }
 
     except json.JSONDecodeError as e:
+
         return {
             "error": "Invalid JSON returned by model",
             "exception": str(e),
-            "raw_response": content if "content" in locals() else None
+            "raw_response": (
+                content
+                if "content" in locals()
+                else None
+            )
         }
 
     except Exception as e:
+
         return {
             "error": "Draft generation failed",
             "exception": str(e)
