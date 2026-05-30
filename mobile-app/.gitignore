@@ -1,13 +1,40 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# =========================
+# Python Backend
+# =========================
 
-# dependencies
-node_modules/
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+# Environment Variables
+.env
+.env.*
+
+# Gmail OAuth Secrets
+backend/token.json
+backend/credentials.json
+
+# Logs
+logs/
+*.log
+
+# =========================
+# React Native / Expo
+# =========================
+
+mobile-app/node_modules/
+
+mobile-app/.expo/
+mobile-app/dist/
+mobile-app/web-build/
+
+mobile-app/expo-env.d.ts
+
+# Metro
+.metro-health-check*
 
 # Native
 .kotlin/
@@ -18,26 +45,55 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
-# Metro
-.metro-health-check*
+# Generated Native Folders
+mobile-app/android/
+mobile-app/ios/
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# =========================
+# Typescript
+# =========================
 
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
 *.tsbuildinfo
 
-example
+# =========================
+# VS Code
+# =========================
 
-# generated native folders
-/ios
-/android
+.vscode/
+
+# =========================
+# OS Files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# npm / yarn debug
+# =========================
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Build Files
+# =========================
+
+build/
+dist/
+
+# =========================
+# Supabase
+# =========================
+
+backend/supabase/.temp/
+
+# =========================
+# Claude / AI tooling
+# =========================
+
+.claude/
+CLAUDE.md
+
+
