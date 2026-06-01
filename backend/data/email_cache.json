@@ -1,0 +1,152 @@
+{
+  "19e81a3fbdda209c": {
+    "analysis": {
+      "category": "PROMOTION",
+      "priority": "LOW",
+      "summary": "Amazon job advertisement for SDE positions with eligibility criteria and program details.",
+      "tasks": []
+    }
+  },
+  "19e7fa0d23cf4670": {
+    "analysis": {
+      "category": "PROMOTION",
+      "priority": "LOW",
+      "summary": "Email promoting a running challenge with a 20% discount.",
+      "tasks": []
+    }
+  },
+  "19e7f6cd59da0a7f": {
+    "analysis": {
+      "category": "WORK",
+      "priority": "MEDIUM",
+      "summary": "Provides guidance on performing CRUD operations with MongoDB using Java.",
+      "tasks": [
+        {
+          "description": "Review guide on performing CRUD operations with MongoDB using Java."
+        },
+        {
+          "description": "Explore additional courses and tutorials for MongoDB development."
+        }
+      ]
+    },
+    "drafts": {
+      "reply_needed": false,
+      "reason": "This appears to be a marketing email for CRUD operations in Java with MongoDB, which does not require a reply.",
+      "short_reply": "",
+      "professional_reply": "",
+      "detailed_reply": ""
+    }
+  },
+  "19e7f58e5a65855a": {
+    "analysis": {
+      "category": "PROMOTION",
+      "priority": "LOW",
+      "summary": "Promotional announcement for Udemy courses with discounts.",
+      "tasks": []
+    }
+  },
+  "19e7f0196724e36b": {
+    "analysis": {
+      "category": "SOCIAL",
+      "priority": "LOW",
+      "summary": "Comment notification from Facebook reel",
+      "tasks": []
+    },
+    "drafts": {
+      "reply_needed": false,
+      "reason": "This email is a notification from Facebook and does not require a response.",
+      "short_reply": "",
+      "professional_reply": "",
+      "detailed_reply": ""
+    }
+  },
+  "19e7e9fea70b9c25": {
+    "analysis": {
+      "category": "PROMOTION",
+      "priority": "LOW",
+      "summary": "Email with no actionable tasks related to work or personal matters.",
+      "tasks": []
+    }
+  },
+  "19e7e722265a6296": {
+    "analysis": {
+      "category": "PROMOTION",
+      "priority": "LOW",
+      "summary": "Email with a discount offer ending at midnight.",
+      "tasks": []
+    }
+  },
+  "19e7e0c5a05fd1fd": {
+    "analysis": {
+      "category": "INFORMATIONAL",
+      "priority": "MEDIUM",
+      "summary": "Various questions and answers from Quora on different topics including coding, novel writing, cancer, and privacy.",
+      "tasks": []
+    }
+  },
+  "19e7d4988fcf90ca": {
+    "analysis": {
+      "category": "OTHER",
+      "priority": "MEDIUM",
+      "summary": "Guide to using Gemini app for tasks and projects",
+      "tasks": [
+        {
+          "description": "Review and explore the features of the Gemini app"
+        }
+      ]
+    },
+    "drafts": {
+      "reply_needed": false,
+      "reason": "Marketing email promoting AI app features.",
+      "short_reply": "",
+      "professional_reply": "",
+      "detailed_reply": ""
+    }
+  },
+  "19e7b572fccd9377": {
+    "analysis": {
+      "category": "SOCIAL",
+      "priority": "LOW",
+      "summary": "Promotional email for a new show from Crunchyroll.",
+      "tasks": []
+    }
+  },
+  "19e81bfed9801a7a": {
+    "analysis": {
+      "category": "ACADEMIC",
+      "priority": "MEDIUM",
+      "summary": "Reminder for upcoming VIT Chennai daily technical assessment and Neopat daily aptitude assessment.",
+      "tasks": [
+        {
+          "description": "Ensure completion of scheduled assessments on time."
+        }
+      ]
+    },
+    "drafts": {
+      "reply_needed": false,
+      "reason": "This is a general reminder email for assessments and does not require a reply.",
+      "short_reply": "",
+      "professional_reply": "",
+      "detailed_reply": ""
+    }
+  },
+  "19e8219c9eb45ec2": {
+    "analysis": {
+      "category": "CAREER",
+      "priority": "HIGH",
+      "summary": "Internship opportunity for Software Developer position at Vellore Institute of Technology.",
+      "tasks": [
+        {
+          "description": "Respond to the email with an updated resume before Friday."
+        }
+      ]
+    },
+    "drafts": {
+      "reply_needed": true,
+      "reason": "Job opportunity and internship interest",
+      "short_reply": "Thanks for the opportunity, Rahul. I'm interested and will send my updated resume by Friday.",
+      "professional_reply": "Hi Rahul,\n\nThank you for considering me for the Software Developer Internship at VIT. I am indeed very interested in this opportunity and have attached my updated resume for your review. Looking forward to potentially joining the team.\n\nBest regards,\nLakshya",
+      "detailed_reply": "Dear Rahul,\n\nI am writing to express my interest in the Software Developer Internship position you mentioned. After reviewing VIT\u2019s profile, I was particularly impressed by the projects and initiatives your organization is involved in, which align well with my academic interests and professional aspirations.\n\nEnclosed, please find my updated resume for your consideration. I have also attached a brief overview of some of my recent projects that might be relevant to this role. I am keen on contributing to VIT's goals and gaining practical experience in software development during the summer internship program.\n\nI look forward to the possibility of discussing how my skills can complement VIT\u2019s objectives and contribute positively to the team. If there is any additional information or documentation that you require, please let me know.\n\nThank you for your time and consideration.\n\nBest regards,\nLakshya"
+    }
+  }
+}

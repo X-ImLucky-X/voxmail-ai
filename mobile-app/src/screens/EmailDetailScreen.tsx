@@ -47,7 +47,25 @@ export default function EmailDetailScreen({ route }: any) {
   }
 
   async function sendReply(replyText: string) {
+    // Fix 3: Guard against sending empty reply
+    if (!replyText.trim()) {
+      Alert.alert(
+        "No Reply",
+        "This email does not require a reply."
+      );
+      return;
+    }
+
     try {
+      if (!data.email?.sender) {
+
+        Alert.alert(
+          "Cannot Send",
+          "Sender email not available."
+        );
+      
+        return;
+      }
       const sender = data.email.sender;
       const subject = `Re: ${data.email.subject}`;
       await replyEmail(sender, subject, replyText);
@@ -58,6 +76,15 @@ export default function EmailDetailScreen({ route }: any) {
   }
 
   async function copyReply(text: string) {
+    // Fix 4: Guard against copying empty reply
+    if (!text.trim()) {
+      Alert.alert(
+        "No Reply",
+        "No reply available."
+      );
+      return;
+    }
+
     await Clipboard.setStringAsync(text);
     Alert.alert("Copied", "Reply copied to clipboard.");
   }
@@ -92,6 +119,10 @@ export default function EmailDetailScreen({ route }: any) {
   const professionalReply = getReplyText(data.drafts?.professional_reply);
   const detailedReply = getReplyText(data.drafts?.detailed_reply);
 
+  // Fix 2: Read reply_needed and reason from drafts
+  const replyNeeded =data.drafts?.reply_needed ?? true;
+  const replyReason =data.drafts?.reason || "This email does not require a response.";
+
   return (
     <ScrollView
       style={styles.container}
@@ -105,105 +136,138 @@ export default function EmailDetailScreen({ route }: any) {
       <Text style={styles.sectionTitle}>Priority</Text>
       <Text style={styles.priority}>{data.analysis?.priority}</Text>
 
+      {/* Fix 1: Show "No action required" when tasks are empty */}
       <Text style={styles.sectionTitle}>Tasks</Text>
-      {data.analysis?.tasks?.map(
-        (task: any, index: number) => {
-          const taskText =
-            task.description ||
-            task.task ||
-            task.title ||
-            task.action ||
-            "";
+      {data.analysis?.tasks?.length > 0 ? (
 
-          const dueDate =
-            task.due_date ||
-            task.deadline ||
-            "";
+        data.analysis.tasks.map(
+          (task: any, index: number) => {
+            const taskText =
+              task.description ||
+              task.task ||
+              task.title ||
+              task.action ||
+              "";
 
-          return (
-            <View
-              key={index}
-              style={styles.taskCard}
-            >
-              <Text style={styles.task}>
-                • {taskText}
-              </Text>
+            const dueDate =
+              task.due_date ||
+              task.deadline ||
+              "";
 
-              {dueDate ? (
-                <Text style={styles.taskDate}>
-                  Due: {dueDate}
+            return (
+              <View
+                key={index}
+                style={styles.taskCard}
+              >
+                <Text style={styles.task}>
+                  • {taskText}
                 </Text>
-              ) : null}
-            </View>
-          );
-        }
+
+                {dueDate ? (
+                  <Text style={styles.taskDate}>
+                    Due: {dueDate}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          }
+        )
+
+      ) : (
+
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>
+            ✅ No action required.
+          </Text>
+        </View>
+
       )}
 
-      {/* Short Reply */}
-      <Text style={styles.sectionTitle}>Short Reply</Text>
-      <Text style={styles.reply}>{shortReply}</Text>
-      <TouchableOpacity
-        style={styles.copyButton}
-        onPress={() => copyReply(shortReply)}
-      >
-        <Text style={styles.copyText}>📋 Copy Short Reply</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => saveReplyStyle(shortReply)}
-      >
-        <Text style={styles.saveText}>⭐ Save Style</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.sendButton}
-        onPress={() => sendReply(shortReply)}
-      >
-        <Text style={styles.sendText}>📨 Send Reply</Text>
-      </TouchableOpacity>
+      {/* Fix 2: Show "No reply required" when reply_needed is false */}
+      <Text style={styles.sectionTitle}>Reply Recommendation</Text>
 
-      {/* Professional Reply */}
-      <Text style={styles.sectionTitle}>Professional Reply</Text>
-      <Text style={styles.reply}>{professionalReply}</Text>
-      <TouchableOpacity
-        style={styles.copyButton}
-        onPress={() => copyReply(professionalReply)}
-      >
-        <Text style={styles.copyText}>📋 Copy Professional Reply</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => saveReplyStyle(professionalReply)}
-      >
-        <Text style={styles.saveText}>⭐ Save Style</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.sendButton}
-        onPress={() => sendReply(professionalReply)}
-      >
-        <Text style={styles.sendText}>📨 Send Reply</Text>
-      </TouchableOpacity>
+      {replyNeeded ? (
 
-      {/* Detailed Reply */}
-      <Text style={styles.sectionTitle}>Detailed Reply</Text>
-      <Text style={styles.reply}>{detailedReply}</Text>
-      <TouchableOpacity
-        style={styles.copyButton}
-        onPress={() => copyReply(detailedReply)}
-      >
-        <Text style={styles.copyText}>📋 Copy Detailed Reply</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => saveReplyStyle(detailedReply)}
-      >
-        <Text style={styles.saveText}>⭐ Save Style</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.sendButton}
-        onPress={() => sendReply(detailedReply)}
-      >
-        <Text style={styles.sendText}>📨 Send Reply</Text>
-      </TouchableOpacity>
+        <>
+          {/* Short Reply */}
+          <Text style={styles.sectionTitle}>Short Reply</Text>
+          <Text style={styles.reply}>{shortReply}</Text>
+          <TouchableOpacity
+            style={styles.copyButton}
+            onPress={() => copyReply(shortReply)}
+          >
+            <Text style={styles.copyText}>📋 Copy Short Reply</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={() => saveReplyStyle(shortReply)}
+          >
+            <Text style={styles.saveText}>⭐ Save Style</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={() => sendReply(shortReply)}
+          >
+            <Text style={styles.sendText}>📨 Send Reply</Text>
+          </TouchableOpacity>
+
+          {/* Professional Reply */}
+          <Text style={styles.sectionTitle}>Professional Reply</Text>
+          <Text style={styles.reply}>{professionalReply}</Text>
+          <TouchableOpacity
+            style={styles.copyButton}
+            onPress={() => copyReply(professionalReply)}
+          >
+            <Text style={styles.copyText}>📋 Copy Professional Reply</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={() => saveReplyStyle(professionalReply)}
+          >
+            <Text style={styles.saveText}>⭐ Save Style</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={() => sendReply(professionalReply)}
+          >
+            <Text style={styles.sendText}>📨 Send Reply</Text>
+          </TouchableOpacity>
+
+          {/* Detailed Reply */}
+          <Text style={styles.sectionTitle}>Detailed Reply</Text>
+          <Text style={styles.reply}>{detailedReply}</Text>
+          <TouchableOpacity
+            style={styles.copyButton}
+            onPress={() => copyReply(detailedReply)}
+          >
+            <Text style={styles.copyText}>📋 Copy Detailed Reply</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={() => saveReplyStyle(detailedReply)}
+          >
+            <Text style={styles.saveText}>⭐ Save Style</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={() => sendReply(detailedReply)}
+          >
+            <Text style={styles.sendText}>📨 Send Reply</Text>
+          </TouchableOpacity>
+        </>
+
+      ) : (
+
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>
+            No reply required.
+          </Text>
+          <Text style={styles.reasonText}>
+            {replyReason}
+          </Text>
+        </View>
+
+      )}
 
     </ScrollView>
   );
@@ -312,5 +376,23 @@ const styles = StyleSheet.create({
   sendText: {
     color: "#FFFFFF",
     fontWeight: "bold",
+  },
+
+  // New styles for empty states
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+
+  emptyText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  reasonText: {
+    marginTop: 6,
+    color: "#666",
   },
 });

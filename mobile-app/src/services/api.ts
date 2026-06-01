@@ -1,4 +1,4 @@
-const BASE_URL = "http://10.136.161.208:8000";
+const BASE_URL = "http://192.168.1.38:8000";
 
 export async function getEmails() {
   const response = await fetch(`${BASE_URL}/inbox`);
@@ -54,6 +54,15 @@ export async function replyEmail(
         body,
       }),
     }
+  );
+
+  return await response.json();
+}
+
+export async function getDashboard() {
+
+  const response = await fetch(
+    `${BASE_URL}/dashboard`
   );
 
   return await response.json();

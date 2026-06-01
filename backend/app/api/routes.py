@@ -1,20 +1,71 @@
 from fastapi import APIRouter
-from app.models.email_models import EmailInput
+from pydantic import BaseModel
+
+from app.models.email_models import EmailInput, DraftRequest
 from app.agents.triage_agent import analyze_email
 from app.agents.draft_agent import generate_replies
-from app.models.email_models import DraftRequest
 from app.services.email_pipeline import process_email
-from app.services.gmail_service import get_recent_email_previews, get_recent_emails, send_email
 from app.services.gmail_service import (
+    get_recent_email_previews,
     get_recent_emails,
-    get_email_content
+    get_email_content,
+    send_email,
 )
-from pydantic import BaseModel
 from app.services.style_memory import save_reply
-from pydantic import BaseModel
-from app.services.email_pipeline import process_email
+from app.services.cache_service import (
+    get_cached_email,
+    cache_email,
+)
+
+import json
+import os
+
+CACHE_FILE = "data/email_cache.json"
+
+
+def load_cache():
+
+    if not os.path.exists(CACHE_FILE):
+        return {}
+
+    with open(CACHE_FILE, "r") as f:
+        return json.load(f)
+
+
+def save_cache(cache):
+
+    os.makedirs(
+        os.path.dirname(CACHE_FILE),
+        exist_ok=True
+    )
+
+    with open(CACHE_FILE, "w") as f:
+        json.dump(
+            cache,
+            f,
+            indent=2
+        )
+
+
+def get_cached_email(email_id):
+
+    cache = load_cache()
+
+    return cache.get(email_id)
+
+
+def cache_email(email_id, data):
+
+    cache = load_cache()
+
+    cache[email_id] = data
+
+    save_cache(cache)
+
+
 class SaveStyleRequest(BaseModel):
     reply: str
+
 class SendEmailRequest(BaseModel):
     to: str
     subject: str
@@ -25,7 +76,9 @@ class ReplyEmailRequest(BaseModel):
     subject: str
     body: str
 
+
 router = APIRouter()
+
 
 @router.post("/triage")
 async def triage(email: EmailInput):
@@ -37,6 +90,7 @@ async def triage(email: EmailInput):
 
     return result
 
+
 @router.post("/draft")
 async def draft(request: DraftRequest):
 
@@ -46,6 +100,7 @@ async def draft(request: DraftRequest):
 
     return result
 
+
 @router.post("/process-email")
 async def process(email: EmailInput):
 
@@ -54,18 +109,45 @@ async def process(email: EmailInput):
         email.body
     )
 
+
 @router.get("/emails")
 async def emails():
     return get_recent_emails()
+
 
 @router.get("/emails/{message_id}/process")
 async def process_gmail_email(message_id: str):
 
     email = get_email_content(message_id)
 
+    # Major Fix: Return early if both analysis and drafts are cached
+    cached = get_cached_email(message_id)
+
+    if (
+        cached
+        and "analysis" in cached
+        and "drafts" in cached
+    ):
+
+        return {
+            "email": email,
+            "analysis": cached["analysis"],
+            "drafts": cached["drafts"]
+        }
+
+    # Not fully cached — run full pipeline
     result = process_email(
         email["subject"],
         email["body"]
+    )
+
+    # Cache both analysis and drafts together
+    cache_email(
+        message_id,
+        {
+            "analysis": result["analysis"],
+            "drafts": result["drafts"]
+        }
     )
 
     return {
@@ -74,9 +156,57 @@ async def process_gmail_email(message_id: str):
         "drafts": result["drafts"]
     }
 
+
 @router.get("/inbox")
 async def inbox():
-    return get_recent_email_previews()
+
+    emails = get_recent_email_previews()
+
+    for email in emails:
+
+        cached = get_cached_email(
+            email["id"]
+        )
+
+        if cached:
+
+            email["priority"] = (
+                cached["analysis"]
+                .get(
+                    "priority",
+                    "Low"
+                )
+            )
+
+        else:
+
+            email_data = (
+                get_email_content(
+                    email["id"]
+                )
+            )
+
+            analysis = analyze_email(
+                email_data["subject"],
+                email_data["body"]
+            )
+
+            cache_email(
+                email["id"],
+                {
+                    "analysis": analysis
+                }
+            )
+
+            email["priority"] = (
+                analysis.get(
+                    "priority",
+                    "Low"
+                )
+            )
+
+    return emails
+
 
 @router.post("/send-email")
 async def send_email_route(
@@ -93,6 +223,7 @@ async def send_email_route(
         "message_id": result["id"]
     }
 
+
 @router.post("/save-style")
 async def save_style(
     request: SaveStyleRequest
@@ -105,6 +236,7 @@ async def save_style(
     return {
         "success": True
     }
+
 
 @router.post("/reply-email")
 async def reply_email(
@@ -120,4 +252,48 @@ async def reply_email(
     return {
         "success": True,
         "message_id": result["id"]
+    }
+
+
+@router.get("/dashboard")
+async def dashboard():
+
+    emails = get_recent_email_previews()
+
+    high = 0
+    medium = 0
+    low = 0
+
+    for email in emails:
+
+        cached = get_cached_email(
+            email["id"]
+        )
+
+        if not cached:
+            continue
+
+        priority = (
+            cached["analysis"]
+            .get(
+                "priority",
+                ""
+            )
+            .lower()
+        )
+
+        if priority == "high":
+            high += 1
+
+        elif priority == "medium":
+            medium += 1
+
+        else:
+            low += 1
+
+    return {
+        "total": len(emails),
+        "high": high,
+        "medium": medium,
+        "low": low
     }
