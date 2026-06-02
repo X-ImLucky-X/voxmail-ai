@@ -56,8 +56,6 @@ LOW PRIORITY EMAILS:
 => LOW priority
 """
 
-# ── Change 4: Improved task extraction examples (AI-driven, no forced rules) ──
-
 TASK_RULES = """
 Extract actionable tasks whenever the email suggests an action.
 
@@ -91,14 +89,51 @@ For newsletters and promotions:
 tasks should usually be [].
 """
 
+# ── Change 1: Added Calendar Rules ─────────────────────────────────────────────
+CALENDAR_RULES = """
+Detect calendar-worthy events.
+
+Examples:
+
+Interview:
+- Interview scheduled on Monday
+- Technical interview invitation
+
+Meeting:
+- Team meeting at 10 AM
+- Project discussion tomorrow
+
+Academic:
+- Exam on Friday
+- Assignment due on 15 June
+
+Event:
+- Webinar invitation
+- Conference registration
+
+If detected:
+{
+  "detected": true,
+  "title": "Interview Scheduled",
+  "date": "15 June 2026",
+  "time": "10:00 AM"
+}
+
+Otherwise:
+{
+  "detected": false,
+  "title": "",
+  "date": "",
+  "time": ""
+}
+"""
+
 CATEGORY_RULES = """
 You MUST use one of these exact categories (uppercase):
 
 SECURITY / FINANCE / CAREER / ACADEMIC / WORK /
 PERSONAL / PROMOTION / SOCIAL / SYSTEM / INFORMATIONAL / OTHER
 """
-
-# ── Change 3: User context for AI-driven priority ──────────────────────────────
 
 USER_CONTEXT = """
 USER CONTEXT
@@ -117,8 +152,6 @@ Priority must be determined from THIS user's perspective.
 An email that is highly relevant to the user's goals should receive higher priority.
 """
 
-
-# ── Fix 2 & 3: Category enum + normalization ──────────────────────────────────
 
 VALID_CATEGORIES = {
     "SECURITY", "FINANCE", "CAREER", "ACADEMIC", "WORK",
@@ -142,8 +175,6 @@ def normalize_category(data):
     return data
 
 
-# ── Fix 1 & 8: Clean + truncate email body ────────────────────────────────────
-
 def clean_email_body(body: str) -> str:
     body = re.sub(r"<[^>]+>", " ", body)
     body = re.sub(r"\s+", " ", body)
@@ -154,10 +185,9 @@ def clean_email_body(body: str) -> str:
 
 def analyze_email(subject: str, body: str):
 
-    # Fix 1 & 8: clean and truncate before anything else
     body = clean_email_body(body)
 
-    # Change 3: User context included in prompt
+    # Change 2 & 3: Injected CALENDAR_RULES and updated prompt response schema
     prompt = f"""
     You are VoxMail AI, an intelligent executive email assistant.
 
@@ -168,6 +198,8 @@ def analyze_email(subject: str, body: str):
     {PRIORITY_RULES}
 
     {TASK_RULES}
+
+    {CALENDAR_RULES}
 
     {CATEGORY_RULES}
 
@@ -181,7 +213,13 @@ def analyze_email(subject: str, body: str):
             {{
                 "description": ""
             }}
-        ]
+        ],
+        "calendar_event": {{
+            "detected": false,
+            "title": "",
+            "date": "",
+            "time": ""
+        }}
     }}
 
     Subject:
@@ -190,8 +228,6 @@ def analyze_email(subject: str, body: str):
     Body:
     {body}
     """
-
-    # Change 1: Removed preclassify() call and hint injection
 
     response = ollama.chat(
         model="qwen2.5:7b",
@@ -208,7 +244,8 @@ def analyze_email(subject: str, body: str):
         "category": "",
         "priority": "",
         "summary": "",
-        "tasks": []
+        "tasks": [],
+        "calendar_event": {}
     }
 
     Never return email_content, subject, body, html,
@@ -235,19 +272,30 @@ def analyze_email(subject: str, body: str):
         analysis = normalize_priority(analysis)
         analysis = normalize_category(analysis)
 
-        # Change 2: Removed forced empty tasks for LOW priority emails
-        # AI decides tasks based on content, not priority level
+        # Enforce that a baseline struct exists if AI returned calendar keys missing
+        if "calendar_event" not in analysis:
+            analysis["calendar_event"] = {
+                "detected": False,
+                "title": "",
+                "date": "",
+                "time": ""
+            }
 
         return analysis
 
     except Exception as e:
-
         print("Analysis failed:", e)
 
-        # Fix 4: no repair call — return safe fallback immediately
+        # Change 5: Safe structural fallback returning calendar options
         return {
             "category": "OTHER",
             "priority": "LOW",
             "summary": "Unable to classify.",
-            "tasks": []
+            "tasks": [],
+            "calendar_event": {
+                "detected": False,
+                "title": "",
+                "date": "",
+                "time": ""
+            }
         }

@@ -7,17 +7,33 @@ def validate_analysis(data):
         "tasks"
     }
 
-    actual_fields = set(data.keys())
+    missing_fields = (
+        required_fields -
+        set(data.keys())
+    )
 
-    if actual_fields != required_fields:
+    if missing_fields:
+
         raise ValueError(
-            f"Invalid schema: {actual_fields}"
+            f"Missing fields: {missing_fields}"
         )
 
-    if not isinstance(data["tasks"], list):
+    if not isinstance(
+        data["tasks"],
+        list
+    ):
         raise ValueError(
             "tasks must be a list"
         )
+
+    if "calendar_event" not in data:
+
+        data["calendar_event"] = {
+            "detected": False,
+            "title": "",
+            "date": "",
+            "time": ""
+        }
 
     return data
 

@@ -1,43 +1,91 @@
 # =========================
+
 # Python Backend
+
 # =========================
 
 backend/venv/
-backend/__pycache__/
-**/__pycache__/
+venv/
+
+backend/**pycache**/
+**/**pycache**/
+
 *.pyc
 *.pyo
 *.pyd
 
+# Testing
+
+.pytest_cache/
+*.pytest_cache/
+
+# =========================
+
 # Environment Variables
+
+# =========================
+
 .env
 .env.*
 
+# =========================
+
 # Gmail OAuth Secrets
+
+# =========================
+
 backend/token.json
 backend/credentials.json
 
+# =========================
+
+# Runtime Data (Do NOT Push)
+
+# =========================
+
+backend/data/email_cache.json
+backend/data/completed_tasks.json
+backend/data/style_memory.json
+
+# =========================
+
 # Logs
+
+# =========================
+
 logs/
 *.log
 
 # =========================
+
 # React Native / Expo
+
 # =========================
 
 mobile-app/node_modules/
 
 mobile-app/.expo/
+mobile-app/.expo-shared/
+
 mobile-app/dist/
 mobile-app/web-build/
+
+mobile-app/.bundle/
 
 mobile-app/expo-env.d.ts
 
 # Metro
+
 .metro-health-check*
 
-# Native
+# =========================
+
+# Native Build Files
+
+# =========================
+
 .kotlin/
+
 *.orig.*
 *.jks
 *.p8
@@ -45,31 +93,40 @@ mobile-app/expo-env.d.ts
 *.key
 *.mobileprovision
 
-# Generated Native Folders
+# Expo Managed Workflow
+
 mobile-app/android/
 mobile-app/ios/
 
 # =========================
-# Typescript
+
+# TypeScript
+
 # =========================
 
 *.tsbuildinfo
 
 # =========================
+
 # VS Code
+
 # =========================
 
 .vscode/
 
 # =========================
+
 # OS Files
+
 # =========================
 
 .DS_Store
 Thumbs.db
 
 # =========================
+
 # npm / yarn debug
+
 # =========================
 
 npm-debug.log*
@@ -77,23 +134,27 @@ yarn-debug.log*
 yarn-error.log*
 
 # =========================
+
 # Build Files
+
 # =========================
 
 build/
 dist/
 
 # =========================
+
 # Supabase
+
 # =========================
 
 backend/supabase/.temp/
 
 # =========================
+
 # Claude / AI tooling
+
 # =========================
 
 .claude/
 CLAUDE.md
-
-

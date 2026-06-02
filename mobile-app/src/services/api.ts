@@ -12,8 +12,24 @@ export async function processEmail(id: string) {
 
   return await response.json();
 }
+export async function toggleTask(
+  taskId: string
+) {
 
+  await fetch(
+    `${BASE_URL}/tasks/${taskId}/toggle`,
+    {
+      method: "POST"
+    }
+  );
+}
+export async function getTasks() {
+  const response = await fetch(
+    `${BASE_URL}/tasks`
+  );
 
+  return response.json();
+}
 export async function saveStyle(
   reply: string
 ) {
