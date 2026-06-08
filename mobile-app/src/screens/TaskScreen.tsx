@@ -56,12 +56,13 @@ export default function TaskScreen() {
           t.task_id === taskId ? { ...t, completed: !t.completed } : t
         )
       );
+      
+      // Fix: Sequential async execution ensures backend updates fully persist 
       await toggleTask(taskId);
-      // Refresh to ensure server sync alignment matches up perfectly
-      loadTasks();
+      await loadTasks();
     } catch (error) {
       console.log("Toggle status update failed:", error);
-      loadTasks(); // Rollback to server truth if api crashed
+      await loadTasks(); // Rollback to server truth if api crashed
     }
   }
 
@@ -89,7 +90,6 @@ export default function TaskScreen() {
           return (
             <View style={[styles.card, item.completed && styles.cardCompleted]}>
               <View style={styles.cardHeaderRow}>
-                {/* Modern Custom Structured Custom Checkbox */}
                 <TouchableOpacity
                   onPress={() => handleToggle(item.task_id)}
                   activeOpacity={0.7}

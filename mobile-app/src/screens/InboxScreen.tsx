@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { getDashboard } from "../services/api";
+import React, { useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native"; 
+import { getDashboard, getEmails } from "../services/api"; 
 import {
   View,
   Text,
@@ -9,11 +10,17 @@ import {
   RefreshControl,
   StyleSheet,
   TextInput,
+  Image,
 } from "react-native";
+// Added safe layout context boundaries import
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getEmails } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function InboxScreen({ navigation }: any) {
+  const { session } = useAuth();
+  const avatar = session?.user?.user_metadata?.avatar_url;
+
   const [stats, setStats] = useState({
     total: 0,
     high: 0,
@@ -27,9 +34,11 @@ export default function InboxScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    loadEmails();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadEmails();
+    }, [])
+  );
 
   async function loadEmails() {
     try {
@@ -60,7 +69,7 @@ export default function InboxScreen({ navigation }: any) {
       setEmails(sortedEmails);
       setStats(dashboard);
     } catch (error) {
-      console.log(error);
+      console.log("Inbox metrics fetch fault:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -90,9 +99,23 @@ export default function InboxScreen({ navigation }: any) {
   });
 
   return (
-    <View style={styles.container}>
+    // Swapped core view with dynamic top-edge hardware boundaries
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.headerRow}>
         <Text style={styles.header}>📬 VoxMail AI</Text>
+        
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Profile")}
+          activeOpacity={0.7}
+        >
+          {avatar ? (
+            <Image source={{ uri: avatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarText}>👤</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       <TextInput
@@ -103,7 +126,6 @@ export default function InboxScreen({ navigation }: any) {
         onChangeText={setSearch}
       />
       
-      {/* Modern Grid System Dashboard */}
       <View style={styles.dashboardCard}>
         <Text style={styles.dashboardTitle}>📊 Insights Dashboard</Text>
         
@@ -174,7 +196,6 @@ export default function InboxScreen({ navigation }: any) {
                 <Text style={styles.subject} numberOfLines={1}>
                   {item.subject || "(No Subject)"}
                 </Text>
-                {/* Modern Pill Badge layout replacing original standalone dot */}
                 <View style={[styles.badge, { backgroundColor: `${priorityColor}15` }]}>
                   <Text style={[styles.badgeText, { color: priorityColor }]}>
                     {(item.priority || "UNKNOWN").toUpperCase()}
@@ -194,7 +215,7 @@ export default function InboxScreen({ navigation }: any) {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -213,7 +234,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 10, // Adjusted padding nicely to match layout bounds alongside SafeArea context
     backgroundColor: "#F9FAFB",
   },
   center: {
@@ -230,12 +251,34 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   header: {
     fontSize: 28,
     fontWeight: "800",
     color: "#111827",
     letterSpacing: -0.6,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  avatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#6366F1",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 18,
   },
   searchInput: {
     backgroundColor: "#FFFFFF",

@@ -1,52 +1,45 @@
-import json
-import os
-
-CACHE_FILE = "data/email_cache.json"
-
-
-def load_cache():
-
-    if not os.path.exists(CACHE_FILE):
-        return {}
-
-    with open(CACHE_FILE, "r") as f:
-        content = f.read().strip()
-        if not content:
-            return {}
-        return json.loads(content)
-
-
-def save_cache(cache):
-
-    os.makedirs(
-        os.path.dirname(CACHE_FILE),
-        exist_ok=True
-    )
-
-    with open(CACHE_FILE, "w") as f:
-        json.dump(
-            cache,
-            f,
-            indent=2
-        )
+from app.services.supabase_service import supabase
 
 
 def get_cached_email(
-    email_id
+    email_id: str,
+    user_id: str
 ):
+    response = (
+        supabase
+        .table("email_analysis")
+        .select("*")
+        .eq("email_id", email_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
 
-    cache = load_cache()
+    if not response.data:
+        return None
 
-    return cache.get(email_id)
+    row = response.data[0]
+
+    return {
+        "analysis": row.get("analysis"),
+        "drafts": row.get("drafts")
+    }
 
 
 def cache_email(
-    email_id,
-    data
+    email_id: str,
+    user_id: str,
+    data: dict
 ):
-
-    cache = load_cache()
-
-    cache[email_id] = data
-
-    save_cache(cache)
+    (
+        supabase
+        .table("email_analysis")
+        .upsert(
+            {
+                "email_id": email_id,
+                "user_id": user_id,
+                "analysis": data.get("analysis"),
+                "drafts": data.get("drafts"),
+            }
+        )
+        .execute()
+    )

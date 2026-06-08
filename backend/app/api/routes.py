@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends  
 from pydantic import BaseModel
 from app.services.task_service import (
-    load_tasks,
     is_completed,
-    toggle_task
+    toggle_task,
+    generate_deterministic_task_id,
 )
+from app.services.supabase_service import supabase
 from app.models.email_models import EmailInput, DraftRequest
 from app.agents.triage_agent import analyze_email
 from app.agents.draft_agent import generate_replies
@@ -20,42 +21,7 @@ from app.services.cache_service import (
     get_cached_email,
     cache_email,
 )
-import json
-import os
-
-CACHE_FILE = "data/email_cache.json"
-
-
-def load_cache():
-    if not os.path.exists(CACHE_FILE):
-        return {}
-    with open(CACHE_FILE, "r") as f:
-        return json.load(f)
-
-
-def save_cache(cache):
-    os.makedirs(
-        os.path.dirname(CACHE_FILE),
-        exist_ok=True
-    )
-    with open(CACHE_FILE, "w") as f:
-        json.dump(
-            cache,
-            f,
-            indent=2
-        )
-
-
-def get_cached_email(email_id):
-    cache = load_cache()
-    return cache.get(email_id)
-
-
-def cache_email(email_id, data):
-    cache = load_cache()
-    cache[email_id] = data
-    save_cache(cache)
-
+from app.services.auth_service import get_current_user_id
 
 class SaveStyleRequest(BaseModel):
     reply: str
@@ -74,6 +40,13 @@ class ReplyEmailRequest(BaseModel):
 router = APIRouter()
 
 
+@router.get("/me")
+async def me(user_id: str = Depends(get_current_user_id)):
+    return {
+        "user_id": user_id
+    }
+
+
 @router.post("/triage")
 async def triage(email: EmailInput):
     result = analyze_email(
@@ -84,37 +57,40 @@ async def triage(email: EmailInput):
 
 
 @router.post("/draft")
-async def draft(request: DraftRequest):
+async def draft(request: DraftRequest, user_id: str = Depends(get_current_user_id)):
     result = generate_replies(
-        request.email
+        request.email,
+        user_id
     )
     return result
 
 
 @router.post("/process-email")
-async def process(email: EmailInput):
+async def process(email: EmailInput, user_id: str = Depends(get_current_user_id)):
     return process_email(
         email.subject,
-        email.body
+        email.body,
+        user_id
     )
 
 
 @router.get("/emails")
-async def emails():
+async def emails(user_id: str = Depends(get_current_user_id)):
     return get_recent_emails()
 
 
+# Step 4 — Update routes.py (Process Email Route)
 @router.get("/emails/{message_id}/process")
-async def process_gmail_email(message_id: str):
+async def process_gmail_email(message_id: str, user_id: str = Depends(get_current_user_id)):
     email = get_email_content(message_id)
-
-    # Major Fix: Return early if both analysis and drafts are cached
-    cached = get_cached_email(message_id)
+    
+    # Updated to pass both message_id and user_id to partition cache read
+    cached = get_cached_email(message_id, user_id)
 
     if (
         cached
-        and "analysis" in cached
-        and "drafts" in cached
+        and cached.get("analysis") is not None
+        and cached.get("drafts") is not None
     ):
         return {
             "email": email,
@@ -122,15 +98,16 @@ async def process_gmail_email(message_id: str):
             "drafts": cached["drafts"]
         }
 
-    # Not fully cached — run full pipeline
     result = process_email(
         email["subject"],
-        email["body"]
+        email["body"],
+        user_id
     )
 
-    # Cache both analysis and drafts together
+    # Updated to pass both message_id and user_id to partition cache write
     cache_email(
         message_id,
+        user_id,
         {
             "analysis": result["analysis"],
             "drafts": result["drafts"]
@@ -144,14 +121,14 @@ async def process_gmail_email(message_id: str):
     }
 
 
+# Step 5 — Update Inbox Route
 @router.get("/inbox")
-async def inbox():
+async def inbox(user_id: str = Depends(get_current_user_id)):
     emails = get_recent_email_previews()
 
     for email in emails:
-        cached = get_cached_email(
-            email["id"]
-        )
+        # Updated to filter cached reads by message_id and user_id context
+        cached = get_cached_email(email["id"], user_id)
 
         if cached:
             email["priority"] = (
@@ -173,10 +150,13 @@ async def inbox():
                 email_data["body"]
             )
 
+            # Updated to write to localized cache using message_id and user_id context
             cache_email(
                 email["id"],
+                user_id,
                 {
-                    "analysis": analysis
+                    "analysis": analysis,
+                    "drafts": None
                 }
             )
 
@@ -192,7 +172,8 @@ async def inbox():
 
 @router.post("/send-email")
 async def send_email_route(
-    request: SendEmailRequest
+    request: SendEmailRequest,
+    user_id: str = Depends(get_current_user_id)
 ):
     result = send_email(
         request.to,
@@ -208,10 +189,12 @@ async def send_email_route(
 
 @router.post("/save-style")
 async def save_style(
-    request: SaveStyleRequest
+    request: SaveStyleRequest,
+    user_id: str = Depends(get_current_user_id)  
 ):
     save_reply(
-        request.reply
+        request.reply,
+        user_id  
     )
 
     return {
@@ -221,7 +204,8 @@ async def save_style(
 
 @router.post("/reply-email")
 async def reply_email(
-    request: ReplyEmailRequest
+    request: ReplyEmailRequest,
+    user_id: str = Depends(get_current_user_id)
 ):
     result = send_email(
         request.to,
@@ -236,30 +220,33 @@ async def reply_email(
 
 
 @router.get("/dashboard")
-async def dashboard():
+async def dashboard(user_id: str = Depends(get_current_user_id)):  
     emails = get_recent_email_previews()
 
     high = 0
     medium = 0
     low = 0
     total_tasks = 0
-
-    # Calculate completed task flags
-    completed_tasks = load_tasks()
-    completed_count = sum(
-        1 for value in completed_tasks.values() if value
-    )
+    completed_count = 0
 
     for email in emails:
-        cached = get_cached_email(email["id"])
+        # Updated to parse user isolated cache lines during dashboard computation loops
+        cached = get_cached_email(email["id"], user_id)
 
         if not cached:
             continue
 
         analysis = cached.get("analysis", {})
+        email_tasks = analysis.get("tasks", [])
         
-        # Count total tasks found inside this cached email's payload
-        total_tasks += len(analysis.get("tasks", []))
+        total_tasks += len(email_tasks)
+
+        for task in email_tasks:
+            task_description = task.get("description", "")
+            task_id = generate_deterministic_task_id(email["id"], task_description)
+            
+            if is_completed(task_id, user_id):  
+                completed_count += 1
 
         priority = analysis.get("priority", "").lower()
 
@@ -283,14 +270,13 @@ async def dashboard():
 
 
 @router.get("/tasks")
-async def get_tasks():
+async def get_tasks(user_id: str = Depends(get_current_user_id)):  
     emails = get_recent_email_previews()
     tasks = []
 
     for email in emails:
-        cached = get_cached_email(
-            email["id"]
-        )
+        # Updated to parse user isolated cache lines during tasks checklist loops
+        cached = get_cached_email(email["id"], user_id)
 
         if not cached:
             continue
@@ -305,16 +291,14 @@ async def get_tasks():
             []
         )
 
-        for index, task in enumerate(email_tasks):
-            task_id = f"{email['id']}_{index}"
+        for task in email_tasks:
+            task_description = task.get("description", "")
+            task_id = generate_deterministic_task_id(email["id"], task_description)
 
             tasks.append(
                 {
                     "task_id": task_id,
-                    "task": task.get(
-                        "description",
-                        ""
-                    ),
+                    "task": task_description,
                     "priority": analysis.get(
                         "priority",
                         "LOW"
@@ -325,7 +309,8 @@ async def get_tasks():
                     ),
                     "email_id": email["id"],
                     "completed": is_completed(
-                        task_id
+                        task_id,
+                        user_id  
                     )
                 }
             )
@@ -333,14 +318,14 @@ async def get_tasks():
     return tasks
 
 
-@router.post(
-    "/tasks/{task_id}/toggle"
-)
+@router.post("/tasks/{task_id}/toggle")
 async def toggle_task_status(
-    task_id: str
+    task_id: str,
+    user_id: str = Depends(get_current_user_id)  
 ):
     completed = toggle_task(
-        task_id
+        task_id,
+        user_id  
     )
 
     return {

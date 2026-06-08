@@ -1,46 +1,51 @@
-import json
-import os
-
-MEMORY_FILE = "data/style_memory.json"
+from app.services.supabase_service import supabase
 
 
-def load_memory():
-
-    if not os.path.exists(MEMORY_FILE):
-        return []
-
-    with open(
-        MEMORY_FILE,
-        "r",
-        encoding="utf-8"
-    ) as f:
-        return json.load(f)
-
-
-def save_reply(reply_text):
-
-    memory = load_memory()
-
-    memory.append(reply_text)
-
-    memory = memory[-20:]
-
-    with open(
-        MEMORY_FILE,
-        "w",
-        encoding="utf-8"
-    ) as f:
-        json.dump(
-            memory,
-            f,
-            indent=2
+def save_reply(reply_text: str, user_id: str):
+    """
+    Saves a reply variant to the Supabase style_memory table 
+    bound to the authenticated user's ID.
+    """
+    (
+        supabase
+        .table("style_memory")
+        .insert(
+            {
+                "user_id": user_id,
+                "reply": reply_text
+            }
         )
-
-
-def get_style_examples():
-
-    memory = load_memory()
-
-    return "\n\n".join(
-        memory[-5:]
+        .execute()
     )
+
+
+def get_style_examples(user_id: str) -> str:
+    """
+    Retrieves the latest 5 saved writing style variants 
+    for the specific authenticated user.
+    """
+    response = (
+        supabase
+        .table("style_memory")
+        .select("reply")
+        .eq(
+            "user_id",
+            user_id
+        )
+        .order(
+            "created_at",
+            desc=True
+        )
+        .limit(5)
+        .execute()
+    )
+
+    if not response.data:
+        return ""
+
+    replies = [
+        row["reply"]
+        for row in response.data
+    ]
+
+    return "\n\n".join(replies)

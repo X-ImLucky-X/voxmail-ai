@@ -39,11 +39,24 @@ export default function EmailDetailScreen({ route }: any) {
     }
   }
 
+  // Step 2: Improved safely formatted response object unpacker function
   function getReplyText(reply: any) {
     if (!reply) return "";
-    if (typeof reply === "string") return reply;
-    if (typeof reply === "object" && reply.email) return reply.email;
-    return JSON.stringify(reply);
+
+    if (typeof reply === "string") {
+      return reply.trim();
+    }
+
+    if (typeof reply === "object") {
+      return (
+        reply.email ||
+        reply.content ||
+        reply.text ||
+        ""
+      ).trim();
+    }
+
+    return "";
   }
 
   async function sendReply(replyText: string) {
@@ -110,6 +123,11 @@ export default function EmailDetailScreen({ route }: any) {
       </View>
     );
   }
+
+  // Step 1: Injected top-level debug logging metrics
+  console.log("SHORT:", data.drafts?.short_reply);
+  console.log("PROF:", data.drafts?.professional_reply);
+  console.log("DETAIL:", data.drafts?.detailed_reply);
 
   const shortReply = getReplyText(data.drafts?.short_reply);
   const professionalReply = getReplyText(data.drafts?.professional_reply);
@@ -196,7 +214,7 @@ export default function EmailDetailScreen({ route }: any) {
             <View style={styles.draftHeaderRow}>
               <Text style={styles.draftBadgeText}>⚡ SHORT RESPONSE</Text>
             </View>
-            <Text style={styles.replyText}>{shortReply}</Text>
+            <Text style={styles.replyText} selectable>{shortReply}</Text>
             <View style={styles.actionBarRow}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => copyReply(shortReply)}>
                 <Text style={styles.actionBtnText}>📋 Copy</Text>
@@ -215,7 +233,7 @@ export default function EmailDetailScreen({ route }: any) {
             <View style={styles.draftHeaderRow}>
               <Text style={styles.draftBadgeText}>💼 PROFESSIONAL VARIANT</Text>
             </View>
-            <Text style={styles.replyText}>{professionalReply}</Text>
+            <Text style={styles.replyText} selectable>{professionalReply}</Text>
             <View style={styles.actionBarRow}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => copyReply(professionalReply)}>
                 <Text style={styles.actionBtnText}>📋 Copy</Text>
@@ -234,7 +252,8 @@ export default function EmailDetailScreen({ route }: any) {
             <View style={styles.draftHeaderRow}>
               <Text style={styles.draftBadgeText}>📝 COMPREHENSIVE DETAILED</Text>
             </View>
-            <Text style={styles.replyText}>{detailedReply}</Text>
+            {/* Step 3: Added formatting preservation logic with native selection controls */}
+            <Text style={styles.replyText} selectable>{detailedReply}</Text>
             <View style={styles.actionBarRow}>
               <TouchableOpacity style={styles.actionBtn} onPress={() => copyReply(detailedReply)}>
                 <Text style={styles.actionBtnText}>📋 Copy</Text>

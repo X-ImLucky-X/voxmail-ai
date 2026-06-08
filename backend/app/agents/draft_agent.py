@@ -29,12 +29,14 @@ def clean_email_body(body: str) -> str:
     return body[:2000]
 
 
-def generate_replies(email_body: str):
+# Fix: Modified signature to dynamically accept user context
+def generate_replies(email_body: str, user_id: str):
 
     # Fix 2: Clean before passing to model
     email_body = clean_email_body(email_body)
 
-    style_examples = get_style_examples()
+    # Fix: Fetches writing examples specific to the dynamic user_id session context
+    style_examples = get_style_examples(user_id)
 
     prompt = f"""
 You are VoxMail AI.
@@ -93,11 +95,65 @@ Writing Rules:
 - Do not invent personal details.
 - Do not invent job titles.
 - Do not mention being an AI assistant.
-- Keep replies natural.
-- End naturally with:
 
-Best regards,
-Lakshya
+Formatting Rules:
+
+1. short_reply:
+   - Maximum 3 sentences.
+   - No subject line.
+   - No greeting unless appropriate.
+   - End with:
+     Best regards,
+     Lakshya
+
+2. professional_reply:
+   - Use this EXACT structure:
+
+     Dear <Recipient>,
+
+     <Clear and professional response in 1–2 paragraphs>
+
+     Best regards,
+     Lakshya Kumar Singh
+
+   - Never include:
+     Subject:
+     Date:
+     To:
+     From:
+
+3. detailed_reply:
+   - Use this EXACT structure:
+
+     Dear <Recipient>,
+
+     <Opening paragraph acknowledging the email>
+
+     <Detailed response addressing all points>
+
+     <Closing paragraph expressing enthusiasm or willingness to assist>
+
+     Best regards,
+     Lakshya Kumar Singh
+
+   - Use proper paragraph spacing.
+   - Never include:
+     Subject:
+     Date:
+     To:
+     From:
+     Re:
+
+4. Preserve factual information from the incoming email.
+5. If dates, interview times, company names, or recruiter names are present,
+   use them correctly.
+6. If the recipient's name is unknown, use:
+     Dear Hiring Team,
+   or
+     Hello,
+7. Return plain text only inside each reply field.
+8. Do NOT use markdown.
+9. Do NOT wrap the replies in quotes.
 
 Writing style examples:
 
@@ -128,23 +184,24 @@ Return ONLY valid JSON.
             model="qwen2.5:7b",
             format="json",
             messages=[
-                # Fix 3: Added system prompt to prevent "I am an AI" responses
                 {
                     "role": "system",
                     "content": """
-You are an intelligent email reply assistant.
+                You are VoxMail AI, an expert email drafting assistant.
 
-You must return ONLY valid JSON.
+                You generate polished professional email replies.
 
-You must never explain yourself.
+                CRITICAL RULES:
 
-You must never say:
-'I am an AI assistant'
-
-You must never generate placeholders.
-
-You must follow the requested schema exactly.
-"""
+                - Return ONLY valid JSON.
+                - Follow the schema exactly.
+                - Never explain your reasoning.
+                - Never mention being an AI assistant.
+                - Never generate placeholders.
+                - Never include Subject:, Date:, To:, From:, or email metadata inside reply bodies.
+                - Use proper paragraph spacing.
+                - Generate natural, human-like responses.
+                """
                 },
                 {
                     "role": "user",

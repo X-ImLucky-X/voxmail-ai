@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "mobile-app-new",
-    "slug": "mobile-app-new",
+    "name": "VoxMail AI",
+    "slug": "voxmail-ai",
+    "scheme": "voxmail",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.lakshya.voxmailai",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -25,6 +27,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f73bfbbe-a690-4372-b340-5d67f09d06d8"
+      }
     }
   }
 }
